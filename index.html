@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jewels — Fine Jewellery</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #faf6f0;
+  --warm-white: #fff9f2;
+  --gold: #c9973a;
+  --gold-light: #e8bf72;
+  --gold-pale: #f5e9d0;
+  --dark: #1c1710;
+  --brown: #4a3728;
+  --taupe: #8c7b6b;
+  --border: rgba(201,151,58,0.2);
+  --border-soft: rgba(201,151,58,0.1);
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--cream);
+  color: var(--dark);
+  font-family: 'Jost', sans-serif;
+  font-weight: 300;
+  cursor: none;
+  overflow-x: hidden;
+}
+
+/* CUSTOM CURSOR */
+.cursor {
+  position: fixed; top: 0; left: 0; pointer-events: none; z-index: 9999;
+  mix-blend-mode: multiply;
+}
+.cursor-dot {
+  width: 8px; height: 8px; background: var(--gold);
+  border-radius: 50%; position: absolute;
+  transform: translate(-50%,-50%);
+  transition: transform 0.1s;
+}
+.cursor-ring {
+  width: 36px; height: 36px; border: 1px solid var(--gold);
+  border-radius: 50%; position: absolute;
+  transform: translate(-50%,-50%);
+  transition: all 0.15s ease;
+  opacity: 0.6;
+}
+body:has(a:hover) .cursor-ring,
+body:has(button:hover) .cursor-ring { transform: translate(-50%,-50%) scale(1.6); opacity: 1; }
+
+/* NOISE TEXTURE OVERLAY */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 1; opacity: 0.4;
+}
+
+/* ─── HEADER ─── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6%;
+  height: 72px;
+  background: rgba(250,246,240,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.7rem; font-weight: 600; letter-spacing: 3px;
+  color: var(--dark); text-decoration: none;
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-gem {
+  width: 20px; height: 20px;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+  clip-path: polygon(50% 0%, 100% 35%, 80% 100%, 20% 100%, 0% 35%);
+  animation: shimmer 3s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%,100% { opacity: 1; } 50% { opacity: 0.6; }
+}
+
+.header-right { display: flex; align-items: center; gap: 16px; }
+
+.admin-btn {
+  background: none; border: 1px solid var(--border); color: var(--taupe);
+  font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 2px;
+  text-transform: uppercase; padding: 7px 16px; border-radius: 0; cursor: pointer;
+  transition: all 0.3s;
+}
+.admin-btn:hover { border-color: var(--gold); color: var(--gold); background: var(--gold-pale); }
+
+.cart-btn {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--dark); color: var(--cream);
+  border: none; padding: 10px 22px; cursor: pointer;
+  font-family: 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 2px;
+  text-transform: uppercase; transition: all 0.3s; position: relative;
+}
+.cart-btn:hover { background: var(--gold); }
+.cart-badge {
+  background: var(--gold); color: var(--dark);
+  border-radius: 50%; width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 600;
+  transition: transform 0.3s;
+}
+.cart-btn:hover .cart-badge { background: var(--cream); }
+
+/* ─── ADMIN PANEL ─── */
+.admin-panel {
+  position: fixed; top: 72px; left: 0; right: 0; z-index: 400;
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  padding: 32px 6%;
+  transform: translateY(-110%);
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 20px 60px rgba(28,23,16,0.08);
+}
+.admin-panel.open { transform: translateY(0); }
+
+.admin-panel h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-weight: 400; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--gold); margin-bottom: 20px;
+}
+.admin-grid { display: grid; grid-template-columns: 2fr 1fr 2fr 2fr auto; gap: 12px; align-items: end; }
+.admin-input {
+  background: var(--cream); border: 1px solid var(--border); color: var(--dark);
+  font-family: 'Jost', sans-serif; font-size: 0.85rem; font-weight: 300;
+  padding: 12px 16px; outline: none; transition: border-color 0.3s; width: 100%;
+}
+.admin-input:focus { border-color: var(--gold); }
+.admin-input::placeholder { color: var(--taupe); font-style: italic; }
+.admin-select {
+  background: var(--cream); border: 1px solid var(--border); color: var(--dark);
+  font-family: 'Jost', sans-serif; font-size: 0.85rem; padding: 12px 16px;
+  outline: none; cursor: pointer; width: 100%;
+}
+.btn-save {
+  background: var(--gold); color: var(--dark); border: none;
+  font-family: 'Jost', sans-serif; font-size: 0.75rem; letter-spacing: 2px;
+  text-transform: uppercase; font-weight: 600; padding: 12px 24px; cursor: pointer;
+  transition: all 0.3s; white-space: nowrap;
+}
+.btn-save:hover { background: var(--dark); color: var(--gold-light); }
+
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center;
+  padding: 140px 6% 80px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 75% 50%, rgba(201,151,58,0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(201,151,58,0.05) 0%, transparent 60%);
+}
+.hero-lines {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(201,151,58,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,151,58,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse at 70% 50%, black 20%, transparent 70%);
+}
+.hero-content { position: relative; z-index: 2; max-width: 560px; }
+.hero-eyebrow {
+  font-size: 0.7rem; letter-spacing: 5px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 24px;
+  display: flex; align-items: center; gap: 16px;
+}
+.hero-eyebrow::before {
+  content: ''; display: block; width: 40px; height: 1px; background: var(--gold);
+}
+.hero h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(3.5rem, 7vw, 6.5rem);
+  font-weight: 300; line-height: 1.0;
+  color: var(--dark); margin-bottom: 28px;
+}
+.hero h1 em { font-style: italic; color: var(--gold); }
+.hero p {
+  color: var(--taupe); line-height: 1.9; font-size: 0.95rem;
+  margin-bottom: 44px; max-width: 400px;
+}
+.hero-cta {
+  display: inline-flex; align-items: center; gap: 16px;
+  background: none; border: 1px solid var(--dark);
+  color: var(--dark); padding: 16px 36px;
+  font-family: 'Jost', sans-serif; font-size: 0.75rem;
+  letter-spacing: 3px; text-transform: uppercase;
+  cursor: pointer; text-decoration: none; transition: all 0.4s;
+}
+.hero-cta:hover { background: var(--dark); color: var(--cream); gap: 24px; }
+.hero-cta::after { content: '→'; transition: transform 0.3s; }
+.hero-cta:hover::after { transform: translateX(4px); }
+
+/* Floating gem decoration */
+.hero-gem-deco {
+  position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  opacity: 0.15; pointer-events: none;
+  animation: floatDeco 6s ease-in-out infinite;
+}
+@keyframes floatDeco { 0%,100% { transform: translateY(-50%); } 50% { transform: translateY(calc(-50% - 15px)); } }
+.gem-shape {
+  width: 80px; height: 80px;
+  background: linear-gradient(135deg, var(--gold-light), var(--gold));
+}
+.gem-shape:nth-child(1) { clip-path: polygon(50% 0%, 100% 30%, 80% 100%, 20% 100%, 0% 30%); }
+.gem-shape:nth-child(2) { clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); transform: rotate(15deg); width: 60px; height: 60px; margin-top: 20px; }
+.gem-shape:nth-child(3) { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); width: 70px; height: 70px; }
+.gem-shape:nth-child(4) { clip-path: circle(50%); width: 50px; height: 50px; margin-top: 15px; }
+
+/* ─── CATEGORIES ─── */
+.categories {
+  padding: 0 6% 80px;
+  display: flex; gap: 10px; overflow-x: auto;
+  scrollbar-width: none;
+}
+.categories::-webkit-scrollbar { display: none; }
+.cat-pill {
+  flex-shrink: 0; padding: 9px 22px;
+  border: 1px solid var(--border); background: none;
+  font-family: 'Jost', sans-serif; font-size: 0.75rem; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--taupe); cursor: pointer;
+  transition: all 0.3s;
+}
+.cat-pill:hover, .cat-pill.active { background: var(--dark); color: var(--gold-light); border-color: var(--dark); }
+
+/* ─── PRODUCTS ─── */
+.products-section { padding: 0 6% 100px; }
+.section-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 48px; border-bottom: 1px solid var(--border); padding-bottom: 20px;
+}
+.section-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 2.2rem; font-weight: 300; letter-spacing: 1px;
+}
+.section-count { color: var(--taupe); font-size: 0.8rem; letter-spacing: 2px; }
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2px;
+}
+
+.product-card {
+  background: var(--warm-white);
+  position: relative; overflow: hidden;
+  cursor: pointer;
+  animation: fadeUp 0.6s ease both;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.product-card:nth-child(2) { animation-delay: 0.1s; }
+.product-card:nth-child(3) { animation-delay: 0.2s; }
+.product-card:nth-child(4) { animation-delay: 0.3s; }
+.product-card:nth-child(5) { animation-delay: 0.4s; }
+.product-card:nth-child(6) { animation-delay: 0.5s; }
+
+.product-img-wrap {
+  position: relative; overflow: hidden;
+  aspect-ratio: 1;
+  background: linear-gradient(135deg, #f0ebe3, #e8dfd5);
+}
+.product-img-wrap img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+.product-card:hover .product-img-wrap img { transform: scale(1.08); }
+.product-img-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; color: var(--gold);
+  background: linear-gradient(135deg, var(--gold-pale), #ede5d8);
+}
+.product-img-placeholder .gem-icon { font-size: 3.5rem; }
+.product-img-placeholder span { font-family: 'Cormorant Garamond', serif; font-size: 0.9rem; letter-spacing: 2px; color: var(--taupe); }
+
+.product-overlay {
+  position: absolute; inset: 0;
+  background: rgba(28,23,16,0.5);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.3s;
+}
+.product-card:hover .product-overlay { opacity: 1; }
+.btn-quick-add {
+  background: var(--gold); color: var(--dark); border: none;
+  font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 3px;
+  text-transform: uppercase; font-weight: 600; padding: 14px 28px;
+  cursor: pointer; transform: translateY(10px); transition: transform 0.3s, background 0.3s;
+}
+.product-card:hover .btn-quick-add { transform: translateY(0); }
+.btn-quick-add:hover { background: var(--cream); }
+
+.product-badge {
+  position: absolute; top: 16px; left: 16px;
+  background: var(--gold); color: var(--dark);
+  font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+  font-weight: 600; padding: 5px 12px;
+}
+.delete-badge {
+  position: absolute; top: 16px; right: 16px; z-index: 10;
+  background: #c0392b; color: #fff; border: none;
+  width: 32px; height: 32px; border-radius: 50%; font-size: 1rem;
+  cursor: pointer; display: none; align-items: center; justify-content: center;
+  transition: transform 0.2s;
+}
+.delete-badge:hover { transform: scale(1.1); }
+.admin-mode .delete-badge { display: flex; }
+
+.product-info { padding: 20px 20px 24px; }
+.product-category {
+  font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 8px;
+}
+.product-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem; font-weight: 400; margin-bottom: 6px; line-height: 1.3;
+}
+.product-desc { color: var(--taupe); font-size: 0.8rem; line-height: 1.7; margin-bottom: 16px; }
+.product-footer { display: flex; align-items: center; justify-content: space-between; }
+.product-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; font-weight: 600; color: var(--gold);
+}
+.btn-add-small {
+  background: none; border: 1px solid var(--border); color: var(--dark);
+  font-family: 'Jost', sans-serif; font-size: 0.7rem; letter-spacing: 2px;
+  text-transform: uppercase; padding: 8px 16px; cursor: pointer; transition: all 0.3s;
+}
+.btn-add-small:hover { background: var(--dark); color: var(--gold-light); border-color: var(--dark); }
+
+.empty-state {
+  grid-column: 1/-1; text-align: center; padding: 80px 20px;
+  color: var(--taupe);
+}
+.empty-state .big-gem { font-size: 4rem; margin-bottom: 16px; display: block; }
+.empty-state p { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-style: italic; }
+
+/* ─── CART DRAWER ─── */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(28,23,16,0.5);
+  z-index: 800; opacity: 0; pointer-events: none;
+  transition: opacity 0.4s;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+.cart-drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 900;
+  width: 460px; max-width: 100vw;
+  background: var(--warm-white);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  overflow: hidden;
+}
+.cart-drawer.open { transform: translateX(0); }
+
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 28px 32px; border-bottom: 1px solid var(--border);
+}
+.drawer-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem; font-weight: 400; letter-spacing: 2px;
+}
+.drawer-close {
+  background: none; border: none; color: var(--taupe); font-size: 1.3rem;
+  cursor: pointer; line-height: 1; padding: 4px;
+  transition: color 0.2s;
+}
+.drawer-close:hover { color: var(--dark); }
+
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px 32px; }
+.drawer-body::-webkit-scrollbar { width: 3px; }
+.drawer-body::-webkit-scrollbar-thumb { background: var(--border); }
+
+.empty-cart-msg { text-align: center; padding: 60px 0; }
+.empty-cart-msg span { font-size: 3rem; display: block; margin-bottom: 16px; }
+.empty-cart-msg p { color: var(--taupe); font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-style: italic; }
+
+.cart-item {
+  display: flex; gap: 16px; align-items: flex-start;
+  padding: 20px 0; border-bottom: 1px solid var(--border-soft);
+}
+.ci-img {
+  width: 72px; height: 72px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--gold-pale), #ede5d8);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; overflow: hidden;
+}
+.ci-img img { width: 100%; height: 100%; object-fit: cover; }
+.ci-info { flex: 1; }
+.ci-cat { font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold); }
+.ci-name { font-family: 'Cormorant Garamond', serif; font-size: 1rem; margin: 3px 0 10px; }
+.ci-controls { display: flex; align-items: center; gap: 12px; }
+.qty-btn {
+  background: none; border: 1px solid var(--border); color: var(--dark);
+  width: 28px; height: 28px; cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.qty-btn:hover { background: var(--dark); color: var(--gold-light); border-color: var(--dark); }
+.qty-num { font-size: 0.9rem; min-width: 24px; text-align: center; }
+.ci-price {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.1rem; font-weight: 600; color: var(--gold);
+}
+.ci-remove { background: none; border: none; color: var(--taupe); cursor: pointer; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; transition: color 0.2s; }
+.ci-remove:hover { color: #c0392b; }
+
+/* CHECKOUT */
+.drawer-footer { border-top: 1px solid var(--border); padding: 28px 32px; }
+.total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; }
+.total-label { font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; color: var(--taupe); }
+.total-amount { font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: var(--gold); }
+
+.form-section { margin-bottom: 16px; }
+.form-section h4 {
+  font-size: 0.65rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 12px;
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.f-input {
+  background: var(--cream); border: 1px solid var(--border); color: var(--dark);
+  font-family: 'Jost', sans-serif; font-size: 0.82rem; font-weight: 300;
+  padding: 12px 14px; outline: none; transition: border-color 0.3s; width: 100%;
+}
+.f-input:focus { border-color: var(--gold); }
+.f-input::placeholder { color: var(--taupe); }
+.f-input.full { grid-column: 1/-1; }
+
+.wa-btn {
+  width: 100%; background: #25D366; color: #fff; border: none;
+  font-family: 'Jost', sans-serif; font-size: 0.8rem; letter-spacing: 3px;
+  text-transform: uppercase; font-weight: 600; padding: 18px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 16px; transition: all 0.3s;
+}
+.wa-btn:hover { background: #1da851; letter-spacing: 4px; }
+.wa-btn svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
+
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 40px 6%;
+  display: flex; align-items: center; justify-content: space-between;
+  color: var(--taupe); font-size: 0.78rem; letter-spacing: 1px;
+}
+.footer-logo { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; color: var(--dark); }
+.footer-tagline { font-style: italic; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--dark); color: var(--gold-light);
+  font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase;
+  padding: 14px 28px; z-index: 9999;
+  opacity: 0; transition: all 0.4s; pointer-events: none;
+  border: 1px solid rgba(201,151,58,0.3);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .hero { padding: 120px 5% 60px; }
+  .hero h1 { font-size: 3rem; }
+  .hero-gem-deco { display: none; }
+  .admin-grid { grid-template-columns: 1fr 1fr; }
+  .cart-drawer { width: 100vw; }
+  .drawer-footer { padding: 20px; }
+  .form-row { grid-template-columns: 1fr; }
+  footer { flex-direction: column; gap: 12px; text-align: center; }
+  header { padding: 0 4%; }
+}
+</style>
+</head>
+<body>
+
+<!-- Custom Cursor -->
+<div class="cursor" id="cursor">
+  <div class="cursor-dot" id="cursorDot"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+</div>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-gem"></div>
+    RIYA JEWELS
+  </a>
+  <div class="header-right">
+    <button class="admin-btn" id="adminToggle" onclick="toggleAdmin()">⚙ Admin</button>
+    <button class="cart-btn" onclick="openCart()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+      Bag
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- ─── ADMIN PANEL ─── -->
+<div class="admin-panel" id="adminPanel">
+  <h3>✦ Add New Jewellery</h3>
+  <div class="admin-grid">
+    <input class="admin-input" id="pName" placeholder="Piece name *" />
+    <input class="admin-input" id="pPrice" placeholder="₹ Price *" type="number" />
+    <select class="admin-select admin-input" id="pCategory">
+      <option value="Necklace">Necklace</option>
+      <option value="Earrings">Earrings</option>
+      <option value="Ring">Ring</option>
+      <option value="Bracelet">Bracelet</option>
+      <option value="Bangles">Bangles</option>
+      <option value="Pendant">Pendant</option>
+      <option value="Anklet">Anklet</option>
+      <option value="Set">Jewellery Set</option>
+    </select>
+    <input class="admin-input" id="pImg" placeholder="Image URL (optional)" />
+    <button class="btn-save" onclick="addProduct()">Add Piece</button>
+  </div>
+  <div style="margin-top:12px;">
+    <input class="admin-input" id="pDesc" placeholder="Description (optional)" style="width:100%;" />
+  </div>
+</div>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">Fine Jewellery Collection</div>
+    <h1>Crafted<br>with <em>Love</em><br>&amp; Gold</h1>
+    <p>Each piece tells a story. Handpicked jewellery for the modern Indian woman — from everyday elegance to bridal magnificence.</p>
+    <a class="hero-cta" href="#shop" onclick="document.querySelector('.products-section').scrollIntoView({behavior:'smooth'})">
+      Explore Collection
+    </a>
+  </div>
+  <div class="hero-gem-deco">
+    <div class="gem-shape"></div>
+    <div class="gem-shape"></div>
+    <div class="gem-shape"></div>
+    <div class="gem-shape"></div>
+  </div>
+</section>
+
+<!-- ─── CATEGORIES ─── -->
+<div class="categories" id="categoriesBar">
+  <button class="cat-pill active" onclick="filterCat('All', this)">All Pieces</button>
+  <button class="cat-pill" onclick="filterCat('Necklace', this)">Necklace</button>
+  <button class="cat-pill" onclick="filterCat('Earrings', this)">Earrings</button>
+  <button class="cat-pill" onclick="filterCat('Ring', this)">Rings</button>
+  <button class="cat-pill" onclick="filterCat('Bracelet', this)">Bracelets</button>
+  <button class="cat-pill" onclick="filterCat('Bangles', this)">Bangles</button>
+  <button class="cat-pill" onclick="filterCat('Pendant', this)">Pendants</button>
+  <button class="cat-pill" onclick="filterCat('Set', this)">Sets</button>
+</div>
+
+<!-- ─── PRODUCTS ─── -->
+<section class="products-section">
+  <div class="section-header">
+    <h2 class="section-title">Our Collection</h2>
+    <span class="section-count" id="productCount">0 pieces</span>
+  </div>
+  <div class="products-grid" id="productsGrid"></div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo">✦ RIYA JEWELS</div>
+  <div class="footer-tagline">Where Every Piece is a Promise</div>
+  <div>Orders via WhatsApp · Handcrafted</div>
+</footer>
+
+<!-- ─── CART DRAWER ─── -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="drawer-header">
+    <div class="drawer-title">Your Selection</div>
+    <button class="drawer-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-footer" id="drawerFooter"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// CHANGE YOUR WHATSAPP NUMBER BELOW (country code + number, no + or spaces)
+// Example for India: 919876543210
+var WHATSAPP_NUMBER = "919876543210";
+var SHOP_NAME = "Riya Jewels";
+
+var products = JSON.parse(localStorage.getItem('rj_products') || '[]');
+var cart = [];
+var currentFilter = 'All';
+var adminMode = false;
+
+var catIcons = {
+  Necklace: 'necklace', Earrings: 'earrings', Ring: 'ring', Bracelet: 'bracelet',
+  Bangles: 'bangles', Pendant: 'pendant', Anklet: 'anklet', Set: 'set', Default: 'gem'
+};
+
+var catEmoji = {
+  Necklace: '&#128255;', Earrings: '&#10024;', Ring: '&#128141;', Bracelet: '&#8987;',
+  Bangles: '&#128302;', Pendant: '&#11088;', Anklet: '&#10022;', Set: '&#128081;', Default: '&#128142;'
+};
+
+function getCatEmoji(cat) {
+  return catEmoji[cat] || catEmoji.Default;
+}
+
+if (products.length === 0) {
+  products = [
+    { id: 1, name: "Kundan Bridal Necklace", price: 8500, category: "Necklace", desc: "22k gold plated, traditional kundan work", img: "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=600&q=80" },
+    { id: 2, name: "Polki Jhumka Earrings", price: 2200, category: "Earrings", desc: "Antique polish, festive wear", img: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=600&q=80" },
+    { id: 3, name: "Gold Solitaire Ring", price: 4500, category: "Ring", desc: "American diamond, daily wear", img: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=600&q=80" },
+    { id: 4, name: "Meenakari Bangle Set", price: 3200, category: "Bangles", desc: "Set of 4, multicolor enamel", img: "" },
+    { id: 5, name: "Temple Jewellery Set", price: 12000, category: "Set", desc: "Necklace + earrings + tikka, south Indian design", img: "" },
+    { id: 6, name: "Diamond Cut Pendant", price: 1800, category: "Pendant", desc: "Sterling silver, elegant cut", img: "" }
+  ];
+  saveProducts();
+}
+
+function saveProducts() {
+  localStorage.setItem('rj_products', JSON.stringify(products));
+}
+
+// CURSOR
+var cursorDot = document.getElementById('cursorDot');
+var cursorRing = document.getElementById('cursorRing');
+document.addEventListener('mousemove', function(e) {
+  cursorDot.style.left = e.clientX + 'px';
+  cursorDot.style.top = e.clientY + 'px';
+  setTimeout(function() {
+    cursorRing.style.left = e.clientX + 'px';
+    cursorRing.style.top = e.clientY + 'px';
+  }, 60);
+});
+
+// ADMIN
+function toggleAdmin() {
+  adminMode = !adminMode;
+  document.getElementById('adminPanel').classList.toggle('open', adminMode);
+  document.body.classList.toggle('admin-mode', adminMode);
+  document.getElementById('adminToggle').style.color = adminMode ? 'var(--gold)' : '';
+}
+
+function addProduct() {
+  var name = document.getElementById('pName').value.trim();
+  var price = document.getElementById('pPrice').value.trim();
+  var category = document.getElementById('pCategory').value;
+  var desc = document.getElementById('pDesc').value.trim();
+  var img = document.getElementById('pImg').value.trim();
+  if (!name || !price) { showToast('Name and price required!'); return; }
+  products.push({ id: Date.now(), name: name, price: parseFloat(price), category: category, desc: desc, img: img });
+  saveProducts();
+  renderProducts();
+  document.getElementById('pName').value = '';
+  document.getElementById('pPrice').value = '';
+  document.getElementById('pDesc').value = '';
+  document.getElementById('pImg').value = '';
+  showToast(name + ' added to collection!');
+}
+
+function deleteProduct(id) {
+  if (!confirm('Remove this piece from collection?')) return;
+  products = products.filter(function(p) { return p.id !== id; });
+  cart = cart.filter(function(c) { return c.id !== id; });
+  saveProducts();
+  renderProducts();
+  updateBadge();
+}
+
+// FILTER
+function filterCat(cat, el) {
+  currentFilter = cat;
+  document.querySelectorAll('.cat-pill').forEach(function(p) { p.classList.remove('active'); });
+  el.classList.add('active');
+  renderProducts();
+}
+
+// RENDER PRODUCTS - using DOM creation instead of innerHTML with complex strings
+function renderProducts() {
+  var filtered = currentFilter === 'All' ? products : products.filter(function(p) { return p.category === currentFilter; });
+  var grid = document.getElementById('productsGrid');
+  var countEl = document.getElementById('productCount');
+  countEl.textContent = filtered.length + ' piece' + (filtered.length !== 1 ? 's' : '');
+
+  grid.innerHTML = '';
+
+  if (filtered.length === 0) {
+    var empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.style.gridColumn = '1 / -1';
+    empty.innerHTML = '<span class="big-gem">' + getCatEmoji(currentFilter) + '</span><p>' +
+      (currentFilter === 'All' ? 'No pieces yet. Open Admin panel to add jewellery.' : 'No ' + currentFilter + ' pieces yet.') + '</p>';
+    grid.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach(function(p, i) {
+    var card = document.createElement('div');
+    card.className = 'product-card';
+    card.style.animationDelay = (i * 0.07) + 's';
+
+    // image wrap
+    var imgWrap = document.createElement('div');
+    imgWrap.className = 'product-img-wrap';
+
+    if (p.img) {
+      var img = document.createElement('img');
+      img.src = p.img;
+      img.alt = p.name;
+      img.onerror = function() {
+        imgWrap.removeChild(img);
+        var placeholder = document.createElement('div');
+        placeholder.className = 'product-img-placeholder';
+        placeholder.innerHTML = '<span class="gem-icon">' + getCatEmoji(p.category) + '</span><span>' + p.category + '</span>';
+        imgWrap.insertBefore(placeholder, imgWrap.firstChild);
+      };
+      imgWrap.appendChild(img);
+    } else {
+      var placeholder = document.createElement('div');
+      placeholder.className = 'product-img-placeholder';
+      placeholder.innerHTML = '<span class="gem-icon">' + getCatEmoji(p.category) + '</span><span>' + p.category + '</span>';
+      imgWrap.appendChild(placeholder);
+    }
+
+    // overlay
+    var overlay = document.createElement('div');
+    overlay.className = 'product-overlay';
+    var quickBtn = document.createElement('button');
+    quickBtn.className = 'btn-quick-add';
+    quickBtn.textContent = 'Add to Bag';
+    quickBtn.onclick = (function(pid) { return function() { addToCart(pid); }; })(p.id);
+    overlay.appendChild(quickBtn);
+    imgWrap.appendChild(overlay);
+
+    // badge
+    var badge = document.createElement('span');
+    badge.className = 'product-badge';
+    badge.textContent = p.category;
+    imgWrap.appendChild(badge);
+
+    // delete btn
+    var delBtn = document.createElement('button');
+    delBtn.className = 'delete-badge';
+    delBtn.textContent = 'X';
+    delBtn.onclick = (function(pid) { return function() { deleteProduct(pid); }; })(p.id);
+    imgWrap.appendChild(delBtn);
+
+    card.appendChild(imgWrap);
+
+    // info
+    var info = document.createElement('div');
+    info.className = 'product-info';
+    info.innerHTML =
+      '<div class="product-category">' + p.category + '</div>' +
+      '<div class="product-name">' + p.name + '</div>' +
+      '<div class="product-desc">' + (p.desc || 'Fine jewellery piece') + '</div>' +
+      '<div class="product-footer">' +
+        '<div class="product-price">Rs. ' + Number(p.price).toLocaleString('en-IN') + '</div>' +
+      '</div>';
+
+    var addSmall = document.createElement('button');
+    addSmall.className = 'btn-add-small';
+    addSmall.textContent = '+ Add';
+    addSmall.onclick = (function(pid) { return function() { addToCart(pid); }; })(p.id);
+    info.querySelector('.product-footer').appendChild(addSmall);
+
+    card.appendChild(info);
+    grid.appendChild(card);
+  });
+}
+
+// CART
+function addToCart(id) {
+  var p = products.find(function(x) { return x.id === id; });
+  if (!p) return;
+  var ex = cart.find(function(c) { return c.id === id; });
+  if (ex) {
+    ex.qty++;
+  } else {
+    cart.push({ id: p.id, name: p.name, price: p.price, category: p.category, desc: p.desc, img: p.img, qty: 1 });
+  }
+  updateBadge();
+  showToast(p.name + ' added to bag!');
+}
+
+function changeQty(id, d) {
+  var item = cart.find(function(c) { return c.id === id; });
+  if (!item) return;
+  item.qty += d;
+  if (item.qty <= 0) cart = cart.filter(function(c) { return c.id !== id; });
+  updateBadge();
+  renderDrawer();
+}
+
+function removeItem(id) {
+  cart = cart.filter(function(c) { return c.id !== id; });
+  updateBadge();
+  renderDrawer();
+}
+
+function updateBadge() {
+  var n = cart.reduce(function(s, i) { return s + i.qty; }, 0);
+  document.getElementById('cartBadge').textContent = n;
+}
+
+function openCart() {
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('cartDrawer').classList.add('open');
+  renderDrawer();
+}
+
+function closeCart() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
+}
+
+function renderDrawer() {
+  var body = document.getElementById('drawerBody');
+  var footer = document.getElementById('drawerFooter');
+
+  if (cart.length === 0) {
+    body.innerHTML = '<div class="empty-cart-msg"><span>&#128142;</span><p>Your selection is empty</p></div>';
+    footer.innerHTML = '';
+    return;
+  }
+
+  // Build cart items
+  body.innerHTML = '';
+  cart.forEach(function(item) {
+    var div = document.createElement('div');
+    div.className = 'cart-item';
+
+    var imgDiv = document.createElement('div');
+    imgDiv.className = 'ci-img';
+
+    if (item.img) {
+      var img = document.createElement('img');
+      img.src = item.img;
+      img.alt = item.name;
+      img.onerror = function() {
+        imgDiv.removeChild(img);
+        imgDiv.innerHTML = getCatEmoji(item.category);
+      };
+      imgDiv.appendChild(img);
+    } else {
+      imgDiv.innerHTML = getCatEmoji(item.category);
+    }
+
+    var infoDiv = document.createElement('div');
+    infoDiv.className = 'ci-info';
+    infoDiv.innerHTML =
+      '<div class="ci-cat">' + item.category + '</div>' +
+      '<div class="ci-name">' + item.name + '</div>';
+
+    var controls = document.createElement('div');
+    controls.className = 'ci-controls';
+
+    var minusBtn = document.createElement('button');
+    minusBtn.className = 'qty-btn';
+    minusBtn.textContent = '-';
+    minusBtn.onclick = (function(id) { return function() { changeQty(id, -1); }; })(item.id);
+
+    var qtySpan = document.createElement('span');
+    qtySpan.className = 'qty-num';
+    qtySpan.textContent = item.qty;
+
+    var plusBtn = document.createElement('button');
+    plusBtn.className = 'qty-btn';
+    plusBtn.textContent = '+';
+    plusBtn.onclick = (function(id) { return function() { changeQty(id, 1); }; })(item.id);
+
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'ci-remove';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = (function(id) { return function() { removeItem(id); }; })(item.id);
+
+    controls.appendChild(minusBtn);
+    controls.appendChild(qtySpan);
+    controls.appendChild(plusBtn);
+    controls.appendChild(removeBtn);
+    infoDiv.appendChild(controls);
+
+    var priceDiv = document.createElement('div');
+    priceDiv.className = 'ci-price';
+    priceDiv.textContent = 'Rs. ' + (item.price * item.qty).toLocaleString('en-IN');
+
+    div.appendChild(imgDiv);
+    div.appendChild(infoDiv);
+    div.appendChild(priceDiv);
+    body.appendChild(div);
+  });
+
+  // Build footer
+  var total = cart.reduce(function(s, i) { return s + i.price * i.qty; }, 0);
+  footer.innerHTML =
+    '<div class="total-row">' +
+      '<span class="total-label">Total Amount</span>' +
+      '<span class="total-amount">Rs. ' + total.toLocaleString('en-IN') + '</span>' +
+    '</div>' +
+    '<div class="form-section">' +
+      '<h4>Delivery Details</h4>' +
+      '<div class="form-row">' +
+        '<input class="f-input" id="cName" placeholder="Full Name *" />' +
+        '<input class="f-input" id="cPhone" placeholder="Phone Number *" type="tel" />' +
+      '</div>' +
+      '<div class="form-row" style="margin-top:10px;">' +
+        '<input class="f-input full" id="cAddress" placeholder="Delivery Address *" />' +
+      '</div>' +
+      '<div class="form-row" style="margin-top:10px;">' +
+        '<input class="f-input full" id="cNote" placeholder="Special request or note (optional)" />' +
+      '</div>' +
+    '</div>' +
+    '<button class="wa-btn" onclick="sendOrder()">' +
+      '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
+      ' Place Order on WhatsApp' +
+    '</button>';
+}
+
+function sendOrder() {
+  var nameEl = document.getElementById('cName');
+  var phoneEl = document.getElementById('cPhone');
+  var addressEl = document.getElementById('cAddress');
+  var noteEl = document.getElementById('cNote');
+  if (!nameEl || !phoneEl || !addressEl) { showToast('Please fill all fields'); return; }
+  var name = nameEl.value.trim();
+  var phone = phoneEl.value.trim();
+  var address = addressEl.value.trim();
+  var note = noteEl ? noteEl.value.trim() : '';
+  if (!name || !phone || !address) { showToast('Please fill Name, Phone and Address'); return; }
+
+  var total = cart.reduce(function(s, i) { return s + i.price * i.qty; }, 0);
+  var itemLines = cart.map(function(i) {
+    return '- ' + i.name + ' (' + i.category + ') x' + i.qty + ' = Rs.' + (i.price * i.qty).toLocaleString('en-IN');
+  }).join('\n');
+
+  var msg = '*New Order - ' + SHOP_NAME + '*\n\n' +
+    'Name: ' + name + '\n' +
+    'Phone: ' + phone + '\n' +
+    'Address: ' + address + '\n' +
+    (note ? 'Note: ' + note + '\n' : '') +
+    '\n*Order Items:*\n' + itemLines + '\n\n' +
+    '*Total: Rs. ' + total.toLocaleString('en-IN') + '*\n\n' +
+    'Please confirm my order. Thank you!';
+
+  window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2800);
+}
+
+// INIT
+renderProducts();
+</script>
+</body>
+</html>
